@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikimanti - Biografías de Alumnos</title>
+    <style>
+        /* ESTILOS CON TUS COLORES */
+        :root {
+            --azul-marino: #0A192F;
+            --azul-claro: #172A45;
+            --naranja: #FF6B35;
+            --naranja-hover: #E85A28;
+            --verde: #4CAF50;
+            --blanco: #FFFFFF;
+            --gris-claro: #F4F7F6;
+            --texto-oscuro: #333333;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background-color: var(--gris-claro); color: var(--texto-oscuro); }
+        
+        header { background-color: var(--azul-marino); color: var(--blanco); padding: 2rem; text-align: center; border-bottom: 5px solid var(--naranja); }
+        header h1 { margin-bottom: 1rem; font-size: 2.5rem; }
+        
+        .search-container input { width: 100%; max-width: 500px; padding: 0.8rem 1.5rem; border: 2px solid transparent; border-radius: 25px; font-size: 1rem; outline: none; }
+        .search-container input:focus { border-color: var(--verde); }
+
+        main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
+
+        .student-card { background-color: var(--blanco); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; border-top: 4px solid var(--azul-claro); }
+        .student-card img { width: 100%; height: 200px; object-fit: cover; }
+        .student-info { padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .student-info h3 { color: var(--azul-marino); margin-bottom: 0.5rem; }
+        .student-info .grade { color: var(--verde); font-weight: bold; margin-bottom: 1rem; }
+
+        .view-bio-btn { background-color: var(--naranja); color: var(--blanco); border: none; padding: 0.7rem; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
+        .view-bio-btn:hover { background-color: var(--naranja-hover); }
+
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(10, 25, 47, 0.8); justify-content: center; align-items: center; padding: 1rem; }
+        .modal-content { background-color: var(--blanco); border-radius: 15px; max-width: 600px; width: 100%; position: relative; border-left: 8px solid var(--verde); padding: 2.5rem; }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 2rem; color: #aaa; cursor: pointer; }
+        .close-btn:hover { color: var(--naranja); }
+        .modal-header-info { display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1.5rem; }
+        .modal-header-info img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--azul-marino); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Wikimanti</h1>
+        <div class="search-container">
+            <input type="text" id="searchInput" oninput="buscarAlumno()" placeholder="Escribe un nombre (Ej: Sofia o Alejandro)...">
+        </div>
+    </header>
+
+    <main>
+        <section class="students-grid" id="studentsGrid"></section>
+    </main>
+
+    <div id="bioModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModal()">&times;</span>
+            <div class="modal-header-info">
+                <img id="modalImg" src="">
+                <div>
+                    <h2 id="modalName"></h2>
+                    <p id="modalGrade" style="color: var(--verde); font-weight: bold;"></p>
+                </div>
+            </div>
+            <hr style="margin: 1rem 0; border: 0; border-top: 1px solid #ccc;">
+            <h3 style="color: var(--azul-marino); margin-bottom: 0.5rem;">Biografía</h3>
+            <p id="modalBioText" style="line-height: 1.6; margin-bottom: 1.5rem;"></p>
+            <h3 style="color: var(--azul-marino); margin-bottom: 0.5rem;">Intereses</h3>
+            <p id="modalInterests"></p>
+        </div>
+    </div>
+
+    <script>
+        // DATOS DE LOS ALUMNOS
+        const alumnos = [
+            { id: 1, nombre: "Carolina Tapia Anduaga", grado: "3er año de secundaria", imagen: "carolina.png", biografia: "Carolina es una apasionada del ballet desde los 3 años. Llegó a liderar su grupo en 1er año de secundaria. Nació en 29 de agosto de 2011 en Navojoa, Sonora. Vivió en Guaymas hasta los 2 años y en 2014 se mudó a Ensenada. Mide 1.67 m. Su color favorito es el verde, y su signo es Virgo", intereses: "Programación, Robóticas, Ballet, Leer, Tejer" },
+            { id: 2, nombre: "Ivanna Contreras Valdez", grado: "3er año de secundaria", imagen: "ivanna.png", biografia: "Ivanna destaca en el basquetbol y piano. Nació el 29 de junio de 2011 en San Diego, California y vivió el resto de su vida en Ensenada, Baja California. Mide 1.62 m. Su color favorito es el rojo y su signo zodiacal es Cáncer. Le gusta pasar su tiempo libre viendo anime. Uno de sus animes favoritos es My Hero Academia", intereses: "Basquetbol, ver anime, tocar piano, dibujar." },
+            { id: 3, nombre: "Vyena Taís Larios Duarte", grado: "3er año de secundaria", imagen: "vyena.png", biografia: "Vyena es una excelente bailarina, dominando varios géneros musicales disfrutando cada paso. Nació el 24 de junio de 2011 en Estados Unidos de América. Vivió un tiempo allá, pero luego volvió para seguir con sus clases en México. Mide 1.49. En las tardes toma clases de danza. Su libro favorito es The Perks of Being a Wallflower.", intereses: "Danza, series y películas." },
+            { id: 4, nombre: "Kiara Carrillo García", grado: "3er año de secundaria", imagen: "kiara.png", biografia: "Kiara es una estudiante que vive por y para la música. Le gusta cantar y tocar el piano para acompañar su voz. Nació el 24 de julio de 2011 en Ensenada, Baja California. Mide 1.64 m. Sus colores favoritos son el blanco y el azul claro, y su signo zodiacal es Leo.", intereses: "Música, cantar, leer, escribir, piano." }
+        ];
+
+        const grid = document.getElementById('studentsGrid');
+
+        // FUNCIÓN PARA MOSTRAR TARJETAS
+        function pintarAlumnos(lista) {
+            grid.innerHTML = "";
+            if(lista.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #666;">No se encontró ningún alumno.</p>`;
+                return;
+            }
+            lista.forEach(a => {
+                grid.innerHTML += `
+                    <div class="student-card">
+                        <img src="${a.imagen}">
+                        <div class="student-info">
+                            <div>
+                                <h3>${a.nombre}</h3>
+                                <p class="grade">${a.grado}</p>
+                            </div>
+                            <button class="view-bio-btn" onclick="abrirModal(${a.id})">Ver Biografía</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // FUNCIÓN DEL BUSCADOR
+        function buscarAlumno() {
+            const texto = document.getElementById('searchInput').value.toLowerCase().trim();
+            const filtrados = alumnos.filter(a => a.nombre.toLowerCase().includes(texto));
+            pintarAlumnos(filtrados);
+        }
+
+        // FUNCIONES DEL MODAL
+        function abrirModal(id) {
+            const a = alumnos.find(al => al.id === id);
+            if(a) {
+                document.getElementById('modalImg').src = a.imagen;
+                document.getElementById('modalName').textContent = a.nombre;
+                document.getElementById('modalGrade').textContent = a.grado;
+                document.getElementById('modalBioText').textContent = a.biografia;
+                document.getElementById('modalInterests').textContent = a.intereses;
+                document.getElementById('bioModal').style.display = "flex";
+            }
+        }
+
+        function cerrarModal() {
+            document.getElementById('bioModal').style.display = "none";
+        }
+
+        // Cargar todos al inicio
+        pintarAlumnos(alumnos);
+    </script>
+</body>
+</html>
